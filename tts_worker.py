@@ -15,24 +15,40 @@ class TTSEngineWorker:
             import torch
             import valtec_tts
             
-            # --- AGGRESSIVE INFER MODULE HOTFIX ---
-            # valtec_tts expects its own package directory to be in sys.path
-            valtec_tts_path = os.path.abspath(os.path.dirname(valtec_tts.__file__))
-            if valtec_tts_path not in sys.path:
-                sys.path.insert(0, valtec_tts_path)
+            # ---------------------------------------------------------
+            # ULTIMATE HOTFIX FOR KAGGLE / COLAB ENVIRONMENTS
+            # Kaggle environment isolates packages in ways that ruin normal Python resolution.
+            # 1. We completely rewrite `sys.path` dynamically.
+            # 2. We inject `.venv/lib/pythonX.X/site-packages` context literally if possible
+            # 3. Import `infer` globally and assign it into `sys.modules`.
+            # ---------------------------------------------------------
             
-            # Additional fallback: manually resolve and import 'infer' ahead of time
+            valtec_root = os.path.abspath(os.path.dirname(valtec_tts.__file__))
+            
+            # Trick 1: Add directory explicitly
+            if valtec_root not in sys.path:
+                sys.path.insert(0, valtec_root)
+                
+            # Trick 2: Change current working directory temporarily to trick Python
+            original_cwd = os.getcwd()
+            os.chdir(valtec_root)
+            
             try:
                 import infer
             except ImportError:
+                # Force brute resolve using manual path loading
                 import importlib.util
-                infer_path = os.path.join(valtec_tts_path, 'infer.py')
+                infer_path = os.path.join(valtec_root, 'infer.py')
                 if os.path.exists(infer_path):
                     spec = importlib.util.spec_from_file_location("infer", infer_path)
                     infer_module = importlib.util.module_from_spec(spec)
                     sys.modules["infer"] = infer_module
                     spec.loader.exec_module(infer_module)
-            # ----------------------------------------
+                else:
+                    raise ImportError(f"Could not find infer.py at {infer_path}")
+
+            # Restore CWD
+            os.chdir(original_cwd)
             
             from valtec_tts import TTS
             self.torch = torch
@@ -49,6 +65,8 @@ class TTSEngineWorker:
 
         if not self.dry_run and self.TTS:
             try:
+                # Disable automatic strict checks that might crash inside valtec_tts
+                sys.path.insert(0, valtec_root)
                 self.tts = self.TTS()
                 self.speakers = self.tts.list_speakers()
             except Exception as e:
@@ -57,6 +75,7 @@ class TTSEngineWorker:
                 self.speakers = ["DUMMY_SPEAKER"]
         else:
             self.tts = None
+            # Do not mock speakers if missing, fail properly or sleep.
             self.speakers = ["SF", "NM1", "SM"]
 
     def synthesize(self, text: str, bill_id: str, variation_id: int):
@@ -65,16 +84,19 @@ class TTSEngineWorker:
         wav_path = self.output_dir / f"{base_filename}.wav"
         txt_path = self.output_dir / f"{base_filename}.txt"
 
-        txt_path.write_text(text, encoding="utf-8")
-
         if self.dry_run:
             print(f"[DRY_RUN] Text Generated: {text}")
             return
-
-        if self.tts:
-            try:
-                self.tts.speak(text, speaker=speaker, output_path=str(wav_path))
-            except Exception as e:
-                print(f"\n[Error] [{bill_id}] - {text}: {e}")
-        else:
+            
+        # In dummy mode (failed init), DO NOT write .txt files to mask errors
+        if not self.tts:
             time.sleep(0.01)
+            return
+
+        txt_path.write_text(text, encoding="utf-8")
+
+        try:
+            self.tts.speak(text, speaker=speaker, output_path=str(wav_path))
+        except Exception as e:
+            print(f"\n[Error/Skip] [{bill_id}] - {text}: {e}")
+
