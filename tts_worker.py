@@ -15,8 +15,19 @@ class TTSEngineWorker:
         try:
             import sys
             import types
+            import importlib.util
             if 'imp' not in sys.modules:
-                sys.modules['imp'] = types.ModuleType('imp')
+                imp_mock = types.ModuleType('imp')
+                def find_module(name, path=None):
+                    spec = importlib.util.find_spec(name)
+                    if spec is None:
+                        raise ImportError(f"No module named {name}")
+                    # Thư viện viphoneme gọi imp.find_module('viphoneme')[1] để lấy ĐƯỜNG DẪN THƯ MỤC
+                    # Do đó ta phải trả về dirname của __init__.py thay vì nguyên đường dẫn file.
+                    module_dir = os.path.dirname(spec.origin) if spec.origin else name
+                    return (None, module_dir, ('', '', 1))
+                imp_mock.find_module = find_module
+                sys.modules['imp'] = imp_mock
                 
             import torch
             
@@ -58,7 +69,7 @@ class TTSEngineWorker:
                 original_cwd = os.getcwd()
                 os.chdir(valtec_src_dir)
                 
-                self.tts = self.TTS()
+                self.tts = self.TTS(device="cuda")
                 self.speakers = self.tts.list_speakers()
                 
                 os.chdir(original_cwd)
