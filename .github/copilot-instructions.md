@@ -6,3 +6,5 @@ The user may write messages in other languages. Understand other languages input
 - Do not translate the user's request back into other languages unless explicitly asked.
 - If the request is ambiguous, ask clarification questions in English.
 - Keep responses concise and technical.
+
+[IMPORTANT] When using git, always use with -c user.name='trungdangtapcode' -c user.email='tcuong1000@gmail.com' 
