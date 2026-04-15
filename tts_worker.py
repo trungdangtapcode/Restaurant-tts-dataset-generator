@@ -13,6 +13,11 @@ class TTSEngineWorker:
         self.dry_run = dry_run
         
         try:
+            import sys
+            import types
+            if 'imp' not in sys.modules:
+                sys.modules['imp'] = types.ModuleType('imp')
+                
             import torch
             
             # =========================================================
