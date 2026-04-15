@@ -1,43 +1,45 @@
-# 🎲 Tổng hợp các quy tắc sinh ngẫu nhiên (Randomization Rules)
+# 🎲 Randomization Rules Overview
 
-Trong dự án này, hệ thống áp dụng nhiều tầng quy tắc ngẫu nhiên khác nhau từ mặt ngôn ngữ học (Lexical) đến mặt âm thanh (Acoustic) để giúp tập dataset TTS cuối cùng đạt độ tự nhiên cao nhất, giống hệt với cách con người giao tiếp order món trong đời thực.
+In this project, the system applies multiple layers of randomized rules—from lexical phrasing to acoustic variation—to ensure the generated TTS dataset feels perfectly natural, just like how people speak when ordering in a real restaurant.
 
-## 1. 📝 Phân loại và gán đơn vị món (Classifiers / Quantifiers)
-Hệ thống tự động soi từ khóa (keywords) trong tên món ăn để quyết định các danh từ chỉ đơn vị đo lường phù hợp theo văn phong tiếng Việt:
+## 1. 📝 Lexical Classifiers & Quantifiers
+The generator automatically monitors keywords in the item names to select the culturally correct Vietnamese classifiers:
 
-*   **🍹 Đồ uống (Nước ngọt, bia, trà...):**
-    *   *Từ khóa nhận diện:* `7up, aquafina, bia, coca, pepsi, sting, tiger, nước, trà`
-    *   *Trường hợp Số lượng = 1:* ngẫu nhiên chọn `[không có, "1 lon ", "một lon ", "1 chai ", "một chai ", "1 "]`
-    *   *Trường hợp Số lượng > 1:* ngẫu nhiên chọn `["{SL} ", "{SL} lon ", "{SL} chai "]`
-*   **🥖 Đồ Bánh/Mì:**
-    *   *Từ khóa nhận diện:* `bánh mì, vắt mì`
-    *   *Trường hợp Số lượng = 1:* ngẫu nhiên chọn `[không có, "1 ổ ", "một ổ ", "1 "]`
-    *   *Trường hợp Số lượng > 1:* ngẫu nhiên chọn `["{SL} ", "{SL} ổ "]`
-*   **🍲 Món ăn thông thường (Default Food):**
-    *   *Trường hợp Số lượng = 1:* ngẫu nhiên chọn `[không có, "1 ", "một ", "một phần ", "1 phần ", "1 dĩa "]`
-    *   *Trường hợp Số lượng > 1:* ngẫu nhiên chọn `["{SL} ", "{SL} phần ", "{SL} dĩa "]`
+*   **🍹 Drinks (Soda, Beer, Tea...):**
+    *   *Triggers:* `7up`, `aquafina`, `bia`, `coca`, `pepsi`, `sting`, `tiger`, `nước`, `trà`
+    *   *If Quantity = 1:* Randomly selects `["", "1 lon ", "một lon ", "1 chai ", "một chai ", "1 "]`
+    *   *If Quantity > 1:* Randomly selects `["{Qty} ", "{Qty} lon ", "{Qty} chai "]`
 
-## 2. 🔀 Đảo trộn thứ tự món (Item Shuffling)
-Người dùng thực tế không bao giờ đọc order món theo một thứ tự cố định cỗ máy. Do đó:
-*   **Hoán vị vị trí:** Đối với mỗi hóa đơn, danh sách các món ăn/thức uống sẽ được đánh tráo (shuffle) vị trí một cách ngẫu nhiên hoàn toàn ở mỗi vòng lặp biến thể.
-*   **Từ nối (Conjunctions):** Các món ăn được nối với nhau linh hoạt. Giữa món kế cuối và món cuối cùng, hệ thống sẽ ngẫu nhiên bốc 1 trong 4 từ nối: `[" và ", ", với ", ", ", " thêm "]`.
+*   **🥖 Bakery/Noodles:**
+    *   *Triggers:* `bánh mì`, `vắt mì`
+    *   *If Quantity = 1:* Randomly selects `["", "1 ổ ", "một ổ ", "1 "]`
+    *   *If Quantity > 1:* Randomly selects `["{Qty} ", "{Qty} ổ "]`
 
-## 3. 📍 Vị trí đặt số bàn (Table Number Placement)
-Cấu trúc "Số bàn" có 50% cơ hội đứng ở đầu câu và 50% cơ hội nằm ở cuối câu:
-*   **Trường hợp đứng đầu câu:** Chọn ngẫu nhiên từ `["Bàn số {X}, ", "Cho bàn {X}, ", "Bàn {X} gọi ", "Ghi cho bàn {X} ", "Bàn {X} nà, "]`
-*   **Trường hợp đứng cuối câu:** Chọn ngẫu nhiên từ `[" cho bàn số {X}", " bàn {X} nhé", ", bàn {X}"]`
+*   **🍲 Standard Foods (Default):**
+    *   *If Quantity = 1:* Randomly selects `["", "1 ", "một ", "một phần ", "1 phần ", "1 dĩa "]`
+    *   *If Quantity > 1:* Randomly selects `["{Qty} ", "{Qty} phần ", "{Qty} dĩa "]`
 
-## 4. 🗣️ Đuôi câu cảm thán (Ending Particles)
-Để diễn đạt được văn phong tại các quán ăn bình dân, hệ thống tự động bốc ngẫu nhiên một trợ từ ở cuối cùng của đoạn text trước khi đem đi sinh âm thanh:
-*   **Các đuôi ngẫu nhiên:** `[".", " nhé.", " nha.", " nha em.", " nha quán."]`
+## 2. 🔀 Item Shuffling (Item Order Randomization)
+Real humans rarely sequence their orders identically every time. To mirror this:
+*   **Position Mutation:** The internal array storing the list of foods/drinks inside a single bill is completely shuffled at every generation loop.
+*   **Conjunction Connectors:** For bridging items together (between the second-to-last and the final item), the system draws randomly from 4 different conjunctions: `[" và ", ", với ", ", ", " thêm "]`.
 
-## 5. 🎙️ Ngẫu nhiên Giọng đọc AI đa vùng miền (Random Speakers)
-Tại class `TTSEngineWorker` (`tts_worker.py`), mỗi một biến thể của hóa đơn sẽ không dùng chung 1 người đọc mà được hệ thống bốc ngẫu nhiên 1 trong 5 giọng chuẩn của mô hình ValtecTTS:
+## 3. 📍 Table Number Placement 
+The "Table XX" phrasing has a 50% probability of being spoken at the beginning, and a 50% probability of being placed at the tail end of the sentence:
+*   **Prefix Cases:** Randomly draws from `["Bàn số {X}, ", "Cho bàn {X}, ", "Bàn {X} gọi ", "Ghi cho bàn {X} ", "Bàn {X} nà, "]`
+*   **Suffix Cases:** Randomly draws from `[" cho bàn số {X}", " bàn {X} nhé", ", bàn {X}"]`
 
-*   **Danh sách giọng đọc:** 
-    *   `NF`: Nữ giọng Bắc
-    *   `SF`: Nữ giọng Nam
-    *   `NM1`: Nam giọng Bắc 1
-    *   `NM2`: Nam giọng Bắc 2
-    *   `SM`: Nam giọng Nam
-*   **Quy luật:** Dòng code `speaker = random.choice(self.speakers)` sẽ chạy cho mỗi file wav. Đảm bảo tập dataset của bạn có sự phân bổ đa dạng hoàn hảo giữa đặc trưng giọng GenZ/người lớn và các vùng giọng (Bắc/Nam).
+## 4. 🗣️ Sentence Ending Particles
+To convey the realistic casual vibe of street food stalls or pubs, the text engine picks a random particle right at the termination of the string:
+*   **Ending particles:** `[".", " nhé.", " nha.", " nha em.", " nha quán."]`
+
+## 5. 🎙️ Random AI Regional Speakers (Acoustic Variation)
+Located inside the `TTSEngineWorker` (`tts_worker.py`), each independent variation snippet is passed across different AI character voices:
+
+*   **List of Speakers available under ValtecTTS:** 
+    *   `NF`: Northern Female
+    *   `SF`: Southern Female
+    *   `NM1`: Northern Male 1
+    *   `NM2`: Northern Male 2
+    *   `SM`: Southern Male
+*   **Algorithm Rule:** Driven by `speaker = random.choice(self.speakers)`, this enforces a highly scattered variance mixing both accents (Northern vs Southern) and distinct gender traits seamlessly over thousands of iterations.
