@@ -36,9 +36,10 @@ pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu121
 pip install tqdm "numpy<2.0.0"
 ```
 
-3. **Install Valtec TTS Model**
+3. **Install Valtec TTS Model Dependencies**
+Since the `valtec-tts-repo` source code is now included directly in this project (fixing the missing `infer.py` issue on Kaggle/Colab), you just need to install it locally:
 ```bash
-pip install git+https://github.com/tronghieuit/valtec-tts.git
+pip install ./valtec-tts-repo
 ```
 
 ---
